@@ -60,30 +60,30 @@ jobs:
         run: databricks lakeview import --profile PROD --json "*.lvdash.json"
 
   auto-pr:
-    needs: deploy
-    runs-on: ubuntu-latest
+  needs: deploy
+  runs-on: ubuntu-latest
 
-    steps:
-      # 1. Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  steps:
+    # 1. Checkout repository
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      # 2. Configure Git
-      - name: Configure Git
-        run: |
-          git config --global user.name "CI/CD Bot"
-          git config --global user.email "cicd-bot@company.com"
+    # 2. Configure Git
+    - name: Configure Git
+      run: |
+        git config --global user.name "CI/CD Bot"
+        git config --global user.email "cicd-bot@company.com"
 
-      # 3. Auto PR: Dev → UAT
-      - name: Create PR Dev → UAT
-        if: github.ref_name == 'dev'
-        run: gh pr create --base uat --head dev --title "Dev → UAT" --body "Auto PR: dashboards promotion"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 3. Auto PR: Dev → UAT
+    - name: Create PR Dev → UAT
+      if: github.ref_name == 'dev'
+      run: gh pr create --base uat --head dev --title "Dev → UAT" --body "Auto PR: dashboards promotion"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 4. Auto PR: UAT → Prod
-      - name: Create PR UAT → Prod
-        if: github.ref_name == 'uat'
-        run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # 4. Auto PR: UAT → Prod
+    - name: Create PR UAT → Prod
+      if: github.ref_name == 'uat'
+      run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
