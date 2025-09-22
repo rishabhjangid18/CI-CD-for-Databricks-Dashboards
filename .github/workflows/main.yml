@@ -13,12 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Install Databricks CLI
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
+      # 3. Configure Databricks CLI profiles
       - name: Configure Databricks CLI profiles
         run: |
           mkdir -p ~/.databricks
@@ -37,45 +40,47 @@ jobs:
           echo "client_id = ${{ secrets.DATABRICKS_PROD_SP_CLIENT_ID }}" >> ~/.databrickscfg
           echo "client_secret = ${{ secrets.DATABRICKS_PROD_SP_CLIENT_SECRET }}" >> ~/.databrickscfg
 
-      # Deploy feature branch to Dev
+      # 4. Deploy dashboards from feature branch to Dev
       - name: Deploy dashboards to Dev (feature branch)
         if: startsWith(github.ref, 'refs/heads/feature/')
-        run: databricks lakeview import --profile DEV --json *.lvdash.json
+        run: databricks lakeview import --profile DEV --json "*.lvdash.json"
 
-      # Deploy dev branch to Dev and UAT
+      # 5. Deploy dashboards from dev branch to Dev and UAT
       - name: Deploy dashboards to Dev
         if: github.ref_name == 'dev'
-        run: databricks lakeview import --profile DEV --json *.lvdash.json
+        run: databricks lakeview import --profile DEV --json "*.lvdash.json"
 
       - name: Deploy dashboards to UAT
         if: github.ref_name == 'dev'
-        run: databricks lakeview import --profile UAT --json *.lvdash.json
+        run: databricks lakeview import --profile UAT --json "*.lvdash.json"
 
-      # Deploy uat branch to Prod
+      # 6. Deploy dashboards from uat branch to Prod
       - name: Deploy dashboards to Prod
         if: github.ref_name == 'uat'
-        run: databricks lakeview import --profile PROD --json *.lvdash.json
+        run: databricks lakeview import --profile PROD --json "*.lvdash.json"
 
   auto-pr:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      # 1. Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Configure Git
       - name: Configure Git
         run: |
           git config --global user.name "CI/CD Bot"
           git config --global user.email "cicd-bot@company.com"
 
-      # Dev → UAT PR
+      # 3. Auto PR: Dev → UAT
       - name: Create PR Dev → UAT
         if: github.ref_name == 'dev'
         run: gh pr create --base uat --head dev --title "Dev → UAT" --body "Auto PR: dashboards promotion"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # UAT → Prod PR
+      # 4. Auto PR: UAT → Prod
       - name: Create PR UAT → Prod
         if: github.ref_name == 'uat'
         run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
