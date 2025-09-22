@@ -85,13 +85,3 @@ jobs:
         run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  manual-prod-approval:
-    needs: auto-pr
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://databricks.com
-    steps:
-      - name: Approval Step
-        run: echo "Waiting for manual approval before deploying to Prod"
