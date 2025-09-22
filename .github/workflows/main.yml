@@ -29,12 +29,10 @@ jobs:
           echo "host = ${{ secrets.DATABRICKS_DEV_HOST }}" >> ~/.databrickscfg
           echo "client_id = ${{ secrets.DATABRICKS_DEV_SP_CLIENT_ID }}" >> ~/.databrickscfg
           echo "client_secret = ${{ secrets.DATABRICKS_DEV_SP_CLIENT_SECRET }}" >> ~/.databrickscfg
-
           echo "[UAT]" >> ~/.databrickscfg
           echo "host = ${{ secrets.DATABRICKS_UAT_HOST }}" >> ~/.databrickscfg
           echo "client_id = ${{ secrets.DATABRICKS_UAT_SP_CLIENT_ID }}" >> ~/.databrickscfg
           echo "client_secret = ${{ secrets.DATABRICKS_UAT_SP_CLIENT_SECRET }}" >> ~/.databrickscfg
-
           echo "[PROD]" >> ~/.databrickscfg
           echo "host = ${{ secrets.DATABRICKS_PROD_HOST }}" >> ~/.databrickscfg
           echo "client_id = ${{ secrets.DATABRICKS_PROD_SP_CLIENT_ID }}" >> ~/.databrickscfg
@@ -60,30 +58,40 @@ jobs:
         run: databricks lakeview import --profile PROD --json "*.lvdash.json"
 
   auto-pr:
-  needs: deploy
-  runs-on: ubuntu-latest
+    needs: deploy
+    runs-on: ubuntu-latest
 
-  steps:
-    # 1. Checkout repository
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 2. Configure Git
-    - name: Configure Git
-      run: |
-        git config --global user.name "CI/CD Bot"
-        git config --global user.email "cicd-bot@company.com"
+      # 2. Configure Git
+      - name: Configure Git
+        run: |
+          git config --global user.name "CI/CD Bot"
+          git config --global user.email "cicd-bot@company.com"
 
-    # 3. Auto PR: Dev → UAT
-    - name: Create PR Dev → UAT
-      if: github.ref_name == 'dev'
-      run: gh pr create --base uat --head dev --title "Dev → UAT" --body "Auto PR: dashboards promotion"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 3. Auto PR: Dev → UAT
+      - name: Create PR Dev → UAT
+        if: github.ref_name == 'dev'
+        run: gh pr create --base uat --head dev --title "Dev → UAT" --body "Auto PR: dashboards promotion"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # 4. Auto PR: UAT → Prod
-    - name: Create PR UAT → Prod
-      if: github.ref_name == 'uat'
-      run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 4. Auto PR: UAT → Prod
+      - name: Create PR UAT → Prod
+        if: github.ref_name == 'uat'
+        run: gh pr create --base main --head uat --title "UAT → Prod" --body "Auto PR: dashboards promotion"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  manual-prod-approval:
+    needs: auto-pr
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://databricks.com
+    steps:
+      - name: Approval Step
+        run: echo "Waiting for manual approval before deploying to Prod"
