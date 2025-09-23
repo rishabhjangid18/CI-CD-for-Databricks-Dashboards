@@ -1,30 +1,68 @@
-name: Deploy Dashboards Dev → Prod
+name: Databricks Dashboards CI/CD
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:   # allow manual trigger
 
 jobs:
-  deploy_to_prod:
+  validate_dev:
     runs-on: ubuntu-latest
-    env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_PROD_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Deploy Dashboards to Prod
+      - name: Install Databricks CLI
         run: |
-          for file in *.lvdash.json; do
-            filename=$(basename "$file")
-            echo "Deploying $filename to Prod Workspace"
-            curl -s -X POST "$DATABRICKS_HOST/api/2.0/preview/sql/dashboards/import" \
-              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-              -F "file=@$file" \
-              -F "overwrite=true"
-            echo "$filename deployed successfully."
-          done
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          databricks --version
+
+      - name: Validate Bundle (Dev)
+        run: |
+          databricks bundle validate --target dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DEV_DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DEV_DATABRICKS_TOKEN }}
+          SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID_DEV }}
+
+  deploy_dev:
+    runs-on: ubuntu-latest
+    needs: validate_dev
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          databricks --version
+
+      - name: Deploy to Dev
+        run: |
+          databricks bundle deploy --target dev
+        env:
+          DATABRICKS_HOST: ${{ secrets.DEV_DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DEV_DATABRICKS_TOKEN }}
+          SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID_DEV }}
+
+  deploy_prod:
+    runs-on: ubuntu-latest
+    needs: deploy_dev
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          databricks --version
+
+      - name: Deploy to Prod
+        run: |
+          databricks bundle deploy --target prod
+        env:
+          DATABRICKS_HOST: ${{ secrets.PROD_DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.PROD_DATABRICKS_TOKEN }}
+          SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID_PROD }}
