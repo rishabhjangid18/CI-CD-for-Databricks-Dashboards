@@ -1,0 +1,41 @@
+name: Deploy Dashboards Dev → Prod
+
+on:
+  workflow_dispatch:        # Manual trigger
+  push:
+    branches:
+      - main               # Deploy to Prod only from main branch
+
+jobs:
+  deploy_to_prod:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout Repo
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Python & Databricks CLI
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+
+      # 3️⃣ Configure CLI for Prod
+      - name: Configure Databricks CLI for Prod
+        run: |
+          databricks configure --token <<EOF
+          ${{ secrets.DATABRICKS_PROD_HOST }}
+          ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
+          EOF
+
+      # 4️⃣ Deploy Dashboards to Prod
+      - name: Deploy Dashboards
+        run: |
+          for file in dashboards/*.lvdash.json; do
+            filename=$(basename $file)
+            echo "Deploying $filename to Prod Workspace"
+            databricks workspace import $file /Dashboards/$filename --format SOURCE --overwrite
+          done
