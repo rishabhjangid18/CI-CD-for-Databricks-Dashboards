@@ -15,10 +15,10 @@ class DashboardTester:
         self.environment = environment.lower()
         self.client = WorkspaceClient(
             host=os.getenv("DATABRICKS_HOST"),
-            token=os.getenv("DATABRICKS_TOKEN")
+            token=os.getenv("DATABRICKS_DEV_SP_TOKEN")
         )
         if not self.client:
-            logger.error("Databricks client not initialized. Check DATABRICKS_HOST and DATABRICKS_TOKEN.")
+            logger.error("Databricks client not initialized. Check DATABRICKS_HOST and DATABRICKS_DEV_SP_TOKEN.")
             raise ValueError("Databricks client not initialized")
 
     def get_dashboard_files(self):
