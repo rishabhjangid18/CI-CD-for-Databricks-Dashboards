@@ -1,0 +1,15 @@
+- name: Validate Bundle (Dev)
+  run: |
+    databricks bundle validate --target dev --file databricks.yaml
+  env:
+    DATABRICKS_HOST: ${{ secrets.DEV_DATABRICKS_HOST }}
+    DATABRICKS_TOKEN: ${{ secrets.DEV_DATABRICKS_TOKEN }}
+    SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID_DEV }}
+
+- name: Deploy to Dev
+  run: |
+    databricks bundle deploy --target dev --file databricks.yaml
+  env:
+    DATABRICKS_HOST: ${{ secrets.DEV_DATABRICKS_HOST }}
+    DATABRICKS_TOKEN: ${{ secrets.DEV_DATABRICKS_TOKEN }}
+    SQL_WAREHOUSE_ID: ${{ secrets.SQL_WAREHOUSE_ID_DEV }}
