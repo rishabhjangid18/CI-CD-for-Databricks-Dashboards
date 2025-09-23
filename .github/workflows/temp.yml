@@ -17,18 +17,13 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup Python & CLI
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      
-      - name: Install Databricks CLI
-        run: pip install databricks-cli
-
       - name: Deploy Dashboards to Prod
         run: |
-          for file in dashboards/*.lvdash.json; do
-            filename=$(basename $file)
+          for file in *.lvdash.json; do
+            filename=$(basename "$file")
             echo "Deploying $filename to Prod Workspace"
-            databricks workspace import $file /Dashboards/$filename --format DASHBOARD --overwrite
+            curl -s -X POST "$DATABRICKS_HOST/api/2.0/preview/sql/dashboards/import" \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+              -F "file=@$file"
+            echo "$filename deployed successfully."
           done
