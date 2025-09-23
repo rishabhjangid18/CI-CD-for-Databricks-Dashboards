@@ -24,6 +24,7 @@ jobs:
             echo "Deploying $filename to Prod Workspace"
             curl -s -X POST "$DATABRICKS_HOST/api/2.0/preview/sql/dashboards/import" \
               -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-              -F "file=@$file"
+              -F "file=@$file" \
+              -F "overwrite=true"
             echo "$filename deployed successfully."
           done
