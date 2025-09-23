@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import os
 import json
@@ -22,8 +21,7 @@ class DashboardDeployer:
 
     def get_dashboard_files(self):
         """Get all .lvdash.json files from the root directory"""
-        dashboard_files = [f for f in os.listdir('.') if f.endswith('.lvdash.json')]
-        return dashboard_files
+        return [f for f in os.listdir('.') if f.endswith('.lvdash.json')]
 
     def parse_dashboard_file(self, file_path):
         """Parse Databricks Lakeview dashboard file"""
@@ -49,7 +47,6 @@ class DashboardDeployer:
         """Set default permissions - optional in CI/CD"""
         try:
             logger.info(f"Skipping permission setup for dashboard {dashboard_id} in CI/CD environment")
-            # Implement permissions if needed using SDK
         except Exception as e:
             logger.warning(f"Failed to set permissions for dashboard {dashboard_id}: {str(e)}")
 
@@ -66,16 +63,16 @@ class DashboardDeployer:
                 env_dashboard_name = f"{dashboard_data['name']}_{self.environment}"
                 warehouse_id = self.get_warehouse_id_for_env()
 
-                # Create or update dashboard
-                dashboard = self.client.lakeview.create(
-                    display_name=env_dashboard_name,
+                # Corrected: use `name` instead of `display_name` and proper API path
+                dashboard = self.client.lakeview.dashboards.create(
+                    name=env_dashboard_name,
                     serialized_dashboard=json.dumps(dashboard_data['content']),
                     warehouse_id=warehouse_id
                 )
-                logger.info(f"Deployed dashboard: {env_dashboard_name} (ID: {dashboard.dashboard_id})")
+                logger.info(f"Deployed dashboard: {env_dashboard_name} (ID: {dashboard.id})")
 
                 # Optional: set permissions
-                self.set_default_permissions(dashboard.dashboard_id)
+                self.set_default_permissions(dashboard.id)
 
             except Exception as e:
                 logger.error(f"Failed to deploy {dashboard_file}: {str(e)}")
