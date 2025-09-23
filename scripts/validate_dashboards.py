@@ -1,27 +1,16 @@
+#!/usr/bin/env python3
+
 import os
 import json
-import jsonschema
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Dashboard schema for validation
-DASHBOARD_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "version": {"type": "string"},
-        "datasets": {"type": "array"},
-        "pages": {"type": "array"},
-        "filters": {"type": "array"}
-    },
-    "additionalProperties": True
-}
-
 def validate_dashboard_file(file_path):
     """Validate a single .lvdash.json file"""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             dashboard_config = json.load(f)
         
         # Basic validation for Lakeview dashboard structure
@@ -39,6 +28,9 @@ def validate_dashboard_file(file_path):
     except json.JSONDecodeError as e:
         logger.error(f"✗ Invalid JSON in {file_path}: {str(e)}")
         return False
+    except FileNotFoundError:
+        logger.error(f"✗ File not found: {file_path}")
+        return False
     except Exception as e:
         logger.error(f"✗ Error validating {file_path}: {str(e)}")
         return False
@@ -49,22 +41,32 @@ def main():
     total_files = 0
     
     # Check root directory for .lvdash.json files
-    for file_name in os.listdir('.'):
-        if file_name.endswith('.lvdash.json'):
-            total_files += 1
-            if validate_dashboard_file(file_name):
-                valid_files += 1
-    
-    if total_files == 0:
-        logger.warning("No .lvdash.json files found in root directory")
-        return
+    try:
+        current_dir = os.getcwd()
+        logger.info(f"Checking directory: {current_dir}")
         
-    logger.info(f"Validation complete: {valid_files}/{total_files} files valid")
-    
-    if valid_files != total_files:
+        for file_name in os.listdir('.'):
+            if file_name.endswith('.lvdash.json'):
+                total_files += 1
+                logger.info(f"Found dashboard file: {file_name}")
+                if validate_dashboard_file(file_name):
+                    valid_files += 1
+        
+        if total_files == 0:
+            logger.warning("No .lvdash.json files found in root directory")
+            # List all files to help debug
+            all_files = [f for f in os.listdir('.') if os.path.isfile(f)]
+            logger.info(f"Files in directory: {all_files}")
+            return
+            
+        logger.info(f"Validation complete: {valid_files}/{total_files} files valid")
+        
+        if valid_files != total_files:
+            exit(1)
+            
+    except Exception as e:
+        logger.error(f"Error during validation: {str(e)}")
         exit(1)
 
 if __name__ == "__main__":
     main()
-
----
